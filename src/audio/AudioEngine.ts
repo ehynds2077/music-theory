@@ -7,6 +7,7 @@ export class AudioEngine {
   private piano: Piano;
   private ready = false;
   private contextStarted = false;
+  private handlers: { event: string; fn: (...args: any[]) => void }[] = [];
 
   constructor() {
     this.piano = new Piano({ velocities: 5 });
@@ -27,25 +28,25 @@ export class AudioEngine {
     document.addEventListener('pointerdown', startContext, { once: false });
     document.addEventListener('keydown', startContext, { once: false });
 
-    eventBus.on('note:select', (note: NoteInfo) => {
-      this.playNote(note);
-    });
+    const onSelect = (note: NoteInfo) => this.playNote(note);
+    const onChord = (notes: NoteInfo[]) => this.playChord(notes);
+    const onScale = (notes: NoteInfo[]) => this.playScale(notes);
+    const onNoteOn = (note: NoteInfo) => this.noteOn(note);
+    const onNoteOff = (note: NoteInfo) => this.noteOff(note);
 
-    eventBus.on('audio:playChord', (notes: NoteInfo[]) => {
-      this.playChord(notes);
-    });
+    eventBus.on('note:select', onSelect);
+    eventBus.on('audio:playChord', onChord);
+    eventBus.on('audio:playScale', onScale);
+    eventBus.on('note:on', onNoteOn);
+    eventBus.on('note:off', onNoteOff);
 
-    eventBus.on('audio:playScale', (notes: NoteInfo[]) => {
-      this.playScale(notes);
-    });
-
-    eventBus.on('note:on', (note: NoteInfo) => {
-      this.noteOn(note);
-    });
-
-    eventBus.on('note:off', (note: NoteInfo) => {
-      this.noteOff(note);
-    });
+    this.handlers = [
+      { event: 'note:select', fn: onSelect },
+      { event: 'audio:playChord', fn: onChord },
+      { event: 'audio:playScale', fn: onScale },
+      { event: 'note:on', fn: onNoteOn },
+      { event: 'note:off', fn: onNoteOff },
+    ];
   }
 
   private toToneName(note: NoteInfo): string {
@@ -113,5 +114,12 @@ export class AudioEngine {
         }, 500);
       }, i * delay);
     }
+  }
+
+  dispose(): void {
+    for (const { event, fn } of this.handlers) {
+      eventBus.off(event, fn);
+    }
+    this.handlers = [];
   }
 }

@@ -53,4 +53,10 @@ export class SceneManager {
   render(): void {
     this.renderer.render(this.scene, this.camera);
   }
+
+  dispose(): void {
+    window.removeEventListener('resize', this.onResize);
+    this.renderer.dispose();
+    this.renderer.domElement.remove();
+  }
 }

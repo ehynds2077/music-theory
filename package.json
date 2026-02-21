@@ -10,13 +10,19 @@
   "dependencies": {
     "@tonejs/piano": "^0.2.1",
     "events": "^3.3.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-router": "^7",
     "three": "^0.183.0",
     "tone": "^14.7.0",
     "vexflow": "^5.0.0"
   },
   "devDependencies": {
     "@types/events": "^3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@types/three": "^0.183.0",
+    "@vitejs/plugin-react": "^5.1.4",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "wrangler": "^4.67.0"

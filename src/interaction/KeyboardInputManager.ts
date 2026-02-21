@@ -105,6 +105,9 @@ export class KeyboardInputManager {
 
     eventBus.emit('note:on', note);
     eventBus.emit('keyboard:noteOn', { note, key });
+
+    // Add to unified selection (silent to avoid double audio)
+    eventBus.emit('selection:add', [midi], { silent: true });
   }
 
   private onKeyUp(e: KeyboardEvent): void {

@@ -12,22 +12,76 @@ body {
   height: 100vh;
 }
 
-#app {
-  display: grid;
-  grid-template-columns: 1fr 320px;
+#root {
+  display: flex;
+  flex-direction: column;
   height: 100vh;
 }
 
-#canvas-container {
+/* Nav header */
+.nav-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 20px;
+  height: 44px;
+  background: #101024;
+  border-bottom: 1px solid #2a2a4a;
+  flex-shrink: 0;
+}
+
+.nav-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-link {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #888;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.nav-link:hover {
+  color: #c0c0e0;
+  background: #1e1e3a;
+}
+
+.nav-link.nav-active {
+  color: #ffffff;
+  background: #2a2a5a;
+}
+
+/* Spiral explore page */
+.spiral-explore-page {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* Three.js canvas container */
+.three-canvas {
   position: relative;
   overflow: hidden;
 }
 
-#canvas-container canvas {
+.three-canvas canvas {
   display: block;
 }
 
-#sidebar {
+/* Sidebar */
+.sidebar {
   background: #141428;
   border-left: 1px solid #2a2a4a;
   padding: 20px;
@@ -37,25 +91,25 @@ body {
   gap: 16px;
 }
 
-#sidebar h1 {
+.sidebar h1 {
   font-size: 1.3rem;
   font-weight: 600;
   color: #ffffff;
   letter-spacing: 0.5px;
 }
 
-#controls {
+.controls {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-#controls label {
+.controls label {
   font-size: 0.85rem;
   color: #a0a0c0;
 }
 
-#controls select {
+.controls select {
   width: 100%;
   padding: 8px 10px;
   border-radius: 6px;
@@ -66,7 +120,32 @@ body {
   cursor: pointer;
 }
 
-#controls select:focus {
+.controls select:focus {
+  outline: none;
+  border-color: #6a6aff;
+}
+
+.controls input[type="checkbox"] {
+  margin-right: 6px;
+}
+
+.controls .tab-panel label {
+  font-size: 0.85rem;
+  color: #a0a0c0;
+}
+
+.controls .tab-panel select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #3a3a5a;
+  background: #1e1e3a;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.controls .tab-panel select:focus {
   outline: none;
   border-color: #6a6aff;
 }
@@ -106,23 +185,25 @@ body {
   background: #5050cc;
 }
 
-#info-panel {
+/* Info panel */
+.info-panel {
   font-size: 0.85rem;
   line-height: 1.6;
 }
 
-#info-panel .note-info {
+.info-panel .note-info {
   padding: 10px;
   background: #1a1a34;
   border-radius: 6px;
   border: 1px solid #2a2a4a;
 }
 
-#info-panel .note-info strong {
+.info-panel .note-info strong {
   color: #ffffff;
 }
 
-#sheet-music {
+/* Sheet music */
+.sheet-music {
   background: #ffffff;
   border-radius: 6px;
   min-height: 120px;
@@ -132,7 +213,7 @@ body {
   overflow: hidden;
 }
 
-#sheet-music svg {
+.sheet-music svg {
   max-width: 100%;
 }
 
@@ -169,6 +250,30 @@ body {
 
 .root-buttons .btn {
   flex: 0 0 calc(25% - 3px);
+  font-size: 0.75rem;
+  padding: 4px 2px;
+}
+
+.chord-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chord-buttons .btn {
+  flex: 0 0 calc(25% - 3px);
+  font-size: 0.75rem;
+  padding: 4px 2px;
+}
+
+.inversion-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.inversion-buttons .btn {
+  flex: 1 1 0;
   font-size: 0.75rem;
   padding: 4px 2px;
 }
@@ -218,31 +323,6 @@ body {
   border-top: 1px solid #1e1e3a;
 }
 
-#controls input[type="checkbox"] {
-  margin-right: 6px;
-}
-
-#controls .tab-panel label {
-  font-size: 0.85rem;
-  color: #a0a0c0;
-}
-
-#controls .tab-panel select {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #3a3a5a;
-  background: #1e1e3a;
-  color: #e0e0e0;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-#controls .tab-panel select:focus {
-  outline: none;
-  border-color: #6a6aff;
-}
-
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -250,7 +330,7 @@ body {
 }
 
 /* Loading overlay */
-#loading-overlay {
+.loading-overlay {
   position: fixed;
   inset: 0;
   background: rgba(13, 13, 26, 0.95);
@@ -263,7 +343,7 @@ body {
   transition: opacity 0.4s;
 }
 
-#loading-overlay.hidden {
+.loading-overlay.hidden {
   opacity: 0;
   pointer-events: none;
 }
@@ -372,8 +452,23 @@ body {
   color: #ffffff;
 }
 
+/* Chord info display */
+.chord-info {
+  text-align: center;
+  padding: 8px;
+  background: #1a1a34;
+  border-radius: 6px;
+  border: 1px solid #2a2a4a;
+}
+
+.chord-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffcc00;
+}
+
 /* Footer */
-#footer {
+.footer {
   margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid #2a2a4a;
@@ -384,25 +479,102 @@ body {
   color: #666;
 }
 
-#footer a {
+.footer a {
   color: #6a6aff;
   text-decoration: none;
 }
 
-#footer a:hover {
+.footer a:hover {
   text-decoration: underline;
+}
+
+/* Piano Spiral page */
+.piano-spiral-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
+.piano-spiral-page .three-canvas {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Animation controls */
+.animation-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #141428;
+  border-top: 1px solid #2a2a4a;
+}
+
+.animation-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.animation-buttons .btn {
+  flex: 0 0 auto;
+  min-width: 70px;
+}
+
+.animation-slider {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #2a2a4a;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.animation-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #6a6aff;
+  cursor: pointer;
+}
+
+.animation-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #6a6aff;
+  border: none;
+  cursor: pointer;
+}
+
+.animation-progress {
+  font-size: 0.8rem;
+  color: #a0a0c0;
+  min-width: 36px;
+  text-align: right;
 }
 
 /* Responsive */
 @media (max-width: 800px) {
-  #app {
+  .spiral-explore-page {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr auto;
   }
 
-  #sidebar {
+  .sidebar {
     border-left: none;
     border-top: 1px solid #2a2a4a;
     max-height: 40vh;
+  }
+
+  .nav-header {
+    gap: 12px;
+    padding: 0 12px;
   }
 }
