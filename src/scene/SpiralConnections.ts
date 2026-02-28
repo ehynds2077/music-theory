@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { NoteNode, PITCH_COLORS } from './NoteNode';
 import { ViewMode } from './ViewManager';
-import { eventBus } from '../utils/eventBus';
+import { EventBus } from '../utils/eventBus';
 
 // Chromatic indices reordered by circle of fifths: C→G→D→A→E→B→F#→C#→G#→D#→A#→F
 const FIFTHS_ORDER = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
@@ -26,13 +26,13 @@ export class SpiralConnections {
   private startColors: number[] = [];
   private targetColors: number[] = [];
 
-  constructor(scene: THREE.Scene, nodes: NoteNode[]) {
+  constructor(scene: THREE.Scene, nodes: NoteNode[], bus: EventBus) {
     this.scene = scene;
     this.nodes = nodes;
 
     this.rebuild();
 
-    eventBus.on('view:modeChanged', ({ prevMode, newMode }: { prevMode: ViewMode; newMode: ViewMode }) => {
+    bus.on('view:modeChanged', ({ prevMode, newMode }: { prevMode: ViewMode; newMode: ViewMode }) => {
       this.currentMode = newMode;
       const bothNonConcentric = prevMode !== 'concentric' && newMode !== 'concentric';
       if (bothNonConcentric) {
@@ -42,7 +42,7 @@ export class SpiralConnections {
       // and view:positionsUpdated will rebuild the line each frame
     });
 
-    eventBus.on('view:positionsUpdated', () => {
+    bus.on('view:positionsUpdated', () => {
       if (!this.animating) {
         this.rebuild();
       }

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { NoteNode } from '../scene/NoteNode';
-import { eventBus } from '../utils/eventBus';
+import { EventBus } from '../utils/eventBus';
 
 const DRAG_THRESHOLD = 5; // pixels
 
@@ -10,16 +10,19 @@ export class RaycastPicker {
   private meshes: THREE.Mesh[];
   private camera: THREE.PerspectiveCamera;
   private domElement: HTMLElement;
+  private bus: EventBus;
   private mouseDownPos = { x: 0, y: 0 };
 
   constructor(
     camera: THREE.PerspectiveCamera,
     domElement: HTMLElement,
-    meshes: THREE.Mesh[]
+    meshes: THREE.Mesh[],
+    bus: EventBus
   ) {
     this.camera = camera;
     this.domElement = domElement;
     this.meshes = meshes;
+    this.bus = bus;
 
     domElement.addEventListener('pointerdown', this.onPointerDown);
     domElement.addEventListener('pointerup', this.onPointerUp);
@@ -50,7 +53,7 @@ export class RaycastPicker {
     if (hits.length > 0) {
       const node = (hits[0].object as any).noteNode as NoteNode;
       if (node) {
-        eventBus.emit('note:click', node);
+        this.bus.emit('note:click', node);
       }
     }
   };
@@ -73,12 +76,12 @@ export class RaycastPicker {
     if (newHover !== this.currentHover) {
       if (this.currentHover) {
         this.currentHover.hovered = false;
-        eventBus.emit('note:hoverEnd', this.currentHover);
+        this.bus.emit('note:hoverEnd', this.currentHover);
       }
       this.currentHover = newHover;
       if (this.currentHover) {
         this.currentHover.hovered = true;
-        eventBus.emit('note:hover', this.currentHover);
+        this.bus.emit('note:hover', this.currentHover);
       }
     }
 

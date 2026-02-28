@@ -1,21 +1,23 @@
 import { Piano } from '@tonejs/piano';
 import * as Tone from 'tone';
 import { NoteInfo } from '../data/noteData';
-import { eventBus } from '../utils/eventBus';
+import { EventBus } from '../utils/eventBus';
 
 export class AudioEngine {
   private piano: Piano;
   private ready = false;
   private contextStarted = false;
+  private bus: EventBus;
   private handlers: { event: string; fn: (...args: any[]) => void }[] = [];
 
-  constructor() {
+  constructor(bus: EventBus) {
+    this.bus = bus;
     this.piano = new Piano({ velocities: 5 });
     this.piano.toDestination();
 
     this.piano.load().then(() => {
       this.ready = true;
-      eventBus.emit('audio:ready');
+      bus.emit('audio:ready');
     });
 
     // Ensure AudioContext is started on user gesture
@@ -34,11 +36,11 @@ export class AudioEngine {
     const onNoteOn = (note: NoteInfo) => this.noteOn(note);
     const onNoteOff = (note: NoteInfo) => this.noteOff(note);
 
-    eventBus.on('note:select', onSelect);
-    eventBus.on('audio:playChord', onChord);
-    eventBus.on('audio:playScale', onScale);
-    eventBus.on('note:on', onNoteOn);
-    eventBus.on('note:off', onNoteOff);
+    bus.on('note:select', onSelect);
+    bus.on('audio:playChord', onChord);
+    bus.on('audio:playScale', onScale);
+    bus.on('note:on', onNoteOn);
+    bus.on('note:off', onNoteOff);
 
     this.handlers = [
       { event: 'note:select', fn: onSelect },
@@ -118,7 +120,7 @@ export class AudioEngine {
 
   dispose(): void {
     for (const { event, fn } of this.handlers) {
-      eventBus.off(event, fn);
+      this.bus.off(event, fn);
     }
     this.handlers = [];
   }

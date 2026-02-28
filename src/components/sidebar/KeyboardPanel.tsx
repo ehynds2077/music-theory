@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { eventBus } from '../../utils/eventBus';
+import { useSpiralBus } from '../../contexts/SpiralContext';
 import { useEventBus } from '../../hooks/useEventBus';
 
 const LAYOUT = {
@@ -29,6 +29,7 @@ const LAYOUT = {
 };
 
 export function KeyboardPanel() {
+  const bus = useSpiralBus();
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
   const [octave, setOctave] = useState(4);
   const [chord, setChord] = useState<{ name: string; root: string } | null>(null);
@@ -96,7 +97,7 @@ export function KeyboardPanel() {
       <div className="keyboard-octave">
         <button
           className="btn kb-oct-btn"
-          onClick={() => eventBus.emit('keyboard:shiftOctave', -1)}
+          onClick={() => bus.emit('keyboard:shiftOctave', -1)}
         >
           Z: Oct-
         </button>
@@ -105,7 +106,7 @@ export function KeyboardPanel() {
         </span>
         <button
           className="btn kb-oct-btn"
-          onClick={() => eventBus.emit('keyboard:shiftOctave', 1)}
+          onClick={() => bus.emit('keyboard:shiftOctave', 1)}
         >
           X: Oct+
         </button>

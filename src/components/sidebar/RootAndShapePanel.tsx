@@ -1,39 +1,40 @@
 import { useState, useCallback } from 'react';
 import { SCALES } from '../../data/scales';
 import { ALL_NOTES, NoteInfo } from '../../data/noteData';
-import { eventBus } from '../../utils/eventBus';
+import { useSpiralBus } from '../../contexts/SpiralContext';
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 export function RootAndShapePanel() {
+  const bus = useSpiralBus();
   const [currentRoot, setCurrentRoot] = useState(0);
   const [scaleIndex, setScaleIndex] = useState('');
 
   const emitShape = useCallback(
     (root: number, sIdx: string) => {
       if (sIdx !== '') {
-        eventBus.emit('shape:show', {
+        bus.emit('shape:show', {
           root,
           intervals: SCALES[parseInt(sIdx)].intervals,
           type: 'scale',
         });
       }
     },
-    [],
+    [bus],
   );
 
   const handleRootClick = (i: number) => {
     setCurrentRoot(i);
-    eventBus.emit('root:changed', i);
+    bus.emit('root:changed', i);
     emitShape(i, scaleIndex);
   };
 
   const handleScaleChange = (val: string) => {
     setScaleIndex(val);
     if (val === '') {
-      eventBus.emit('shape:clear');
+      bus.emit('shape:clear');
     } else {
-      eventBus.emit('shape:show', {
+      bus.emit('shape:show', {
         root: currentRoot,
         intervals: SCALES[parseInt(val)].intervals,
         type: 'scale',
@@ -53,7 +54,7 @@ export function RootAndShapePanel() {
     }
     if (notes.length === 0) return;
 
-    eventBus.emit('audio:playScale', notes);
+    bus.emit('audio:playScale', notes);
   };
 
   return (

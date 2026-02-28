@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ViewMode } from '../../scene/ViewManager';
-import { eventBus } from '../../utils/eventBus';
+import { useSpiralBus } from '../../contexts/SpiralContext';
 
 const MODES: { id: ViewMode; label: string }[] = [
   { id: 'spiral', label: 'Spiral' },
@@ -9,11 +9,12 @@ const MODES: { id: ViewMode; label: string }[] = [
 ];
 
 export function ViewModePanel() {
+  const bus = useSpiralBus();
   const [active, setActive] = useState<ViewMode>('spiral');
 
   const handleClick = (mode: ViewMode) => {
     setActive(mode);
-    eventBus.emit('view:toggle', mode);
+    bus.emit('view:toggle', mode);
   };
 
   return (

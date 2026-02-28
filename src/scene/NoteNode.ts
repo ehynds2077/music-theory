@@ -35,7 +35,7 @@ export class NoteNode {
   private _hovered = false;
   private _highlighted = false;
   private baseScale: number;
-  private labelSprite: THREE.Sprite;
+  labelSprite: THREE.Sprite;
   private labelMode: LabelMode = 'letters';
 
   constructor(noteInfo: NoteInfo) {

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { CHORDS } from '../../data/chords';
 import { computeChordMidi, midiToNoteInfos, maxInversion } from '../../data/chordUtils';
-import { eventBus } from '../../utils/eventBus';
+import { useSpiralBus } from '../../contexts/SpiralContext';
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -20,6 +20,7 @@ function inversionShort(i: number): string {
 }
 
 export function ChordsPanel() {
+  const bus = useSpiralBus();
   const [rootIndex, setRootIndex] = useState(0);
   const [chordIdx, setChordIdx] = useState(0);
   const [inversion, setInversion] = useState(0);
@@ -33,15 +34,15 @@ export function ChordsPanel() {
     (root: number, cIdx: number, inv: number, shouldPlay: boolean) => {
       const ch = CHORDS[cIdx];
       const midiNotes = computeChordMidi(root, ch, inv);
-      eventBus.emit('selection:set', midiNotes);
+      bus.emit('selection:set', midiNotes);
       if (shouldPlay) {
         const notes = midiToNoteInfos(midiNotes);
         if (notes.length > 0) {
-          eventBus.emit('audio:playChord', notes);
+          bus.emit('audio:playChord', notes);
         }
       }
     },
-    [],
+    [bus],
   );
 
   const handleRootClick = (i: number) => {

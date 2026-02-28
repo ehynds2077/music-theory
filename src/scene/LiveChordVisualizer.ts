@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { NoteNode } from './NoteNode';
 import { NoteInfo } from '../data/noteData';
 import { CHORDS } from '../data/chords';
-import { eventBus } from '../utils/eventBus';
+import { EventBus } from '../utils/eventBus';
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -12,27 +12,29 @@ const FILL_OPACITY = 0.15;
 
 export class LiveChordVisualizer {
   private scene: THREE.Scene;
+  private bus: EventBus;
   private nodesByMidi: Map<number, NoteNode>;
   private activeNotes = new Set<number>();
   private selectedNotes = new Set<number>();
   private lineObj: THREE.Line | THREE.LineLoop | null = null;
   private fillMesh: THREE.Mesh | null = null;
 
-  constructor(scene: THREE.Scene, nodes: NoteNode[]) {
+  constructor(scene: THREE.Scene, nodes: NoteNode[], bus: EventBus) {
     this.scene = scene;
+    this.bus = bus;
     this.nodesByMidi = new Map(nodes.map((n) => [n.noteInfo.midiNumber, n]));
 
-    eventBus.on('note:on', (info: NoteInfo) => {
+    bus.on('note:on', (info: NoteInfo) => {
       this.activeNotes.add(info.midiNumber);
       this.rebuild();
     });
 
-    eventBus.on('note:off', (info: NoteInfo) => {
+    bus.on('note:off', (info: NoteInfo) => {
       this.activeNotes.delete(info.midiNumber);
       this.rebuild();
     });
 
-    eventBus.on('selection:changed', (notes: NoteInfo[]) => {
+    bus.on('selection:changed', (notes: NoteInfo[]) => {
       this.selectedNotes.clear();
       for (const note of notes) {
         this.selectedNotes.add(note.midiNumber);
@@ -40,7 +42,7 @@ export class LiveChordVisualizer {
       this.rebuild();
     });
 
-    eventBus.on('view:positionsUpdated', () => {
+    bus.on('view:positionsUpdated', () => {
       if (this.activeNotes.size + this.selectedNotes.size >= 2) {
         this.rebuild();
       }
@@ -75,7 +77,7 @@ export class LiveChordVisualizer {
 
     // Detect chord regardless of note count
     const chord = this.detectChord();
-    eventBus.emit('chord:detected', chord);
+    this.bus.emit('chord:detected', chord);
 
     const sorted = [...this.combinedNotes()].sort((a, b) => a - b);
     if (sorted.length < 2) return;

@@ -1,4 +1,4 @@
-import { eventBus } from '../utils/eventBus';
+import { EventBus } from '../utils/eventBus';
 import { getNoteByMidi, NoteInfo } from '../data/noteData';
 import { NoteNode } from '../scene/NoteNode';
 
@@ -36,9 +36,11 @@ export class KeyboardInputManager {
   private activeKeys = new Set<string>();
   private activeMidi = new Map<string, number>(); // key → currently-sounding MIDI
   private noteNodes: Map<number, NoteNode>;
+  private bus: EventBus;
 
-  constructor(noteNodes: NoteNode[]) {
+  constructor(noteNodes: NoteNode[], bus: EventBus) {
     this.noteNodes = new Map(noteNodes.map((n) => [n.noteInfo.midiNumber, n]));
+    this.bus = bus;
 
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onKeyUp = this.onKeyUp.bind(this);
@@ -48,7 +50,7 @@ export class KeyboardInputManager {
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('blur', this.onBlur);
 
-    eventBus.on('keyboard:shiftOctave', (delta: number) => {
+    bus.on('keyboard:shiftOctave', (delta: number) => {
       this.shiftOctave(delta);
     });
   }
@@ -103,11 +105,8 @@ export class KeyboardInputManager {
     const node = this.noteNodes.get(midi);
     if (node) node.playing = true;
 
-    eventBus.emit('note:on', note);
-    eventBus.emit('keyboard:noteOn', { note, key });
-
-    // Add to unified selection (silent to avoid double audio)
-    eventBus.emit('selection:add', [midi], { silent: true });
+    this.bus.emit('note:on', note);
+    this.bus.emit('keyboard:noteOn', { note, key });
   }
 
   private onKeyUp(e: KeyboardEvent): void {
@@ -129,8 +128,8 @@ export class KeyboardInputManager {
     const node = this.noteNodes.get(midi);
     if (node) node.playing = false;
 
-    eventBus.emit('note:off', note);
-    eventBus.emit('keyboard:noteOff', { note, key });
+    this.bus.emit('note:off', note);
+    this.bus.emit('keyboard:noteOff', { note, key });
   }
 
   private onBlur(): void {
@@ -143,8 +142,8 @@ export class KeyboardInputManager {
       if (note) {
         const node = this.noteNodes.get(midi);
         if (node) node.playing = false;
-        eventBus.emit('note:off', note);
-        eventBus.emit('keyboard:noteOff', { note, key });
+        this.bus.emit('note:off', note);
+        this.bus.emit('keyboard:noteOff', { note, key });
       }
     }
     this.activeKeys.clear();
@@ -156,7 +155,7 @@ export class KeyboardInputManager {
     if (newOctave === this.octave) return;
     this.releaseAll();
     this.octave = newOctave;
-    eventBus.emit('keyboard:octaveChanged', this.octave);
+    this.bus.emit('keyboard:octaveChanged', this.octave);
   }
 
   destroy(): void {

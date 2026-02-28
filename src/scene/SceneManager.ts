@@ -1,13 +1,18 @@
 import * as THREE from 'three';
 
+export interface SceneManagerOptions {
+  pixelRatio?: number;
+}
+
 export class SceneManager {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
 
   private container: HTMLElement;
+  private resizeObserver: ResizeObserver;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, options?: SceneManagerOptions) {
     this.container = container;
 
     // Scene
@@ -22,7 +27,8 @@ export class SceneManager {
 
     // Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const pr = options?.pixelRatio ?? Math.min(window.devicePixelRatio, 2);
+    this.renderer.setPixelRatio(pr);
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(this.renderer.domElement);
 
@@ -38,24 +44,26 @@ export class SceneManager {
     dir2.position.set(-10, 10, -10);
     this.scene.add(dir2);
 
-    // Resize
-    window.addEventListener('resize', this.onResize);
+    // Resize via ResizeObserver (works for embedded containers)
+    this.resizeObserver = new ResizeObserver(() => this.onResize());
+    this.resizeObserver.observe(container);
   }
 
-  private onResize = () => {
+  private onResize(): void {
     const w = this.container.clientWidth;
     const h = this.container.clientHeight;
+    if (w === 0 || h === 0) return;
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
-  };
+  }
 
   render(): void {
     this.renderer.render(this.scene, this.camera);
   }
 
   dispose(): void {
-    window.removeEventListener('resize', this.onResize);
+    this.resizeObserver.disconnect();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }

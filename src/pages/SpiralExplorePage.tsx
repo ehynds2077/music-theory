@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ThreeCanvas } from '../components/ThreeCanvas';
+import { MusicSpiral } from '../components/MusicSpiral';
 import { Sidebar } from '../components/sidebar/Sidebar';
 import { LoadingOverlay } from '../components/LoadingOverlay';
+import { SpiralContext } from '../contexts/SpiralContext';
+import { EventBus } from '../utils/eventBus';
 
 export function SpiralExplorePage() {
+  const [bus, setBus] = useState<EventBus | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,10 +17,12 @@ export function SpiralExplorePage() {
   const handleAudioReady = useCallback(() => setLoading(false), []);
 
   return (
-    <div className="spiral-explore-page">
-      <ThreeCanvas onAudioReady={handleAudioReady} />
-      <Sidebar />
-      <LoadingOverlay visible={loading} />
-    </div>
+    <SpiralContext.Provider value={bus}>
+      <div className="spiral-explore-page">
+        <MusicSpiral size="full" onBusReady={setBus} onAudioReady={handleAudioReady} />
+        {bus && <Sidebar />}
+        <LoadingOverlay visible={loading} />
+      </div>
+    </SpiralContext.Provider>
   );
 }

@@ -1,12 +1,13 @@
-import { eventBus } from '../../utils/eventBus';
+import { useSpiralBus } from '../../contexts/SpiralContext';
 
 export function ClockOverlayToggle() {
+  const bus = useSpiralBus();
   return (
     <div className="plugin-container">
       <label className="checkbox-label">
         <input
           type="checkbox"
-          onChange={() => eventBus.emit('clock:toggle')}
+          onChange={() => bus.emit('clock:toggle')}
         />{' '}
         Clock Overlay
       </label>

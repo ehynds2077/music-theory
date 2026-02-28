@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LabelMode } from '../../scene/NoteNode';
-import { eventBus } from '../../utils/eventBus';
+import { useSpiralBus } from '../../contexts/SpiralContext';
 
 const MODES: { id: LabelMode; label: string }[] = [
   { id: 'letters', label: 'Letters' },
@@ -8,11 +8,12 @@ const MODES: { id: LabelMode; label: string }[] = [
 ];
 
 export function LabelModePanel() {
+  const bus = useSpiralBus();
   const [active, setActive] = useState<LabelMode>('letters');
 
   const handleClick = (mode: LabelMode) => {
     setActive(mode);
-    eventBus.emit('labels:mode', mode);
+    bus.emit('labels:mode', mode);
   };
 
   return (

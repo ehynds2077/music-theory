@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { INTERVALS } from '../../data/intervals';
-import { eventBus } from '../../utils/eventBus';
+import { useSpiralBus } from '../../contexts/SpiralContext';
 
 export function IntervalPanel() {
+  const bus = useSpiralBus();
   const [value, setValue] = useState('');
 
   const handleChange = (val: string) => {
     setValue(val);
     if (val === '') {
-      eventBus.emit('interval:select', null);
+      bus.emit('interval:select', null);
     } else {
-      eventBus.emit('interval:select', INTERVALS[parseInt(val)]);
+      bus.emit('interval:select', INTERVALS[parseInt(val)]);
     }
   };
 

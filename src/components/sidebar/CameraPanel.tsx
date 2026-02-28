@@ -1,4 +1,4 @@
-import { eventBus } from '../../utils/eventBus';
+import { useSpiralBus } from '../../contexts/SpiralContext';
 import { CameraPreset } from '../../scene/CameraController';
 
 const PRESETS: { id: CameraPreset; label: string }[] = [
@@ -8,6 +8,7 @@ const PRESETS: { id: CameraPreset; label: string }[] = [
 ];
 
 export function CameraPanel() {
+  const bus = useSpiralBus();
   return (
     <div className="plugin-container">
       <label>Camera View</label>
@@ -16,7 +17,7 @@ export function CameraPanel() {
           <button
             key={p.id}
             className="btn"
-            onClick={() => eventBus.emit('camera:preset', p.id)}
+            onClick={() => bus.emit('camera:preset', p.id)}
           >
             {p.label}
           </button>

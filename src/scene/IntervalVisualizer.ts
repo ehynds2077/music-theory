@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { NoteNode, PITCH_COLORS } from './NoteNode';
 import { IntervalDef } from '../data/intervals';
-import { eventBus } from '../utils/eventBus';
+import { EventBus } from '../utils/eventBus';
 
 export class IntervalVisualizer {
   private scene: THREE.Scene;
@@ -9,15 +9,15 @@ export class IntervalVisualizer {
   private lines: THREE.LineSegments | null = null;
   private currentInterval: IntervalDef | null = null;
 
-  constructor(scene: THREE.Scene, nodes: NoteNode[]) {
+  constructor(scene: THREE.Scene, nodes: NoteNode[], bus: EventBus) {
     this.scene = scene;
     this.nodes = nodes;
 
-    eventBus.on('interval:select', (interval: IntervalDef | null) => {
+    bus.on('interval:select', (interval: IntervalDef | null) => {
       this.showInterval(interval);
     });
 
-    eventBus.on('view:positionsUpdated', () => {
+    bus.on('view:positionsUpdated', () => {
       if (this.currentInterval) {
         this.showInterval(this.currentInterval);
       }

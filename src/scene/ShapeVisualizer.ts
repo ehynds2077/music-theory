@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { NoteNode, PITCH_COLORS } from './NoteNode';
-import { eventBus } from '../utils/eventBus';
+import { EventBus } from '../utils/eventBus';
 
 // Reference octave for shape visualization — places shapes in the middle of the helix
 const REF_OCTAVE = 4;
@@ -19,29 +19,29 @@ export class ShapeVisualizer {
   private outlineLine: THREE.Line | THREE.LineLoop | null = null;
   private currentShape: ShapePayload | null = null;
 
-  constructor(scene: THREE.Scene, nodes: NoteNode[]) {
+  constructor(scene: THREE.Scene, nodes: NoteNode[], bus: EventBus) {
     this.scene = scene;
     this.nodes = nodes;
     this.nodesByMidi = new Map(nodes.map((n) => [n.noteInfo.midiNumber, n]));
 
-    eventBus.on('shape:show', (payload: ShapePayload) => {
+    bus.on('shape:show', (payload: ShapePayload) => {
       this.currentShape = payload;
       this.rebuild();
     });
 
-    eventBus.on('shape:clear', () => {
+    bus.on('shape:clear', () => {
       this.currentShape = null;
       this.clear();
       this.clearHighlights();
     });
 
-    eventBus.on('view:positionsUpdated', () => {
+    bus.on('view:positionsUpdated', () => {
       if (this.currentShape) {
         this.rebuild();
       }
     });
 
-    eventBus.on('root:changed', () => {
+    bus.on('root:changed', () => {
       if (this.currentShape) {
         this.rebuild();
       }

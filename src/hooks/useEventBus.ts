@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
-import { eventBus } from '../utils/eventBus';
+import { useEffect, useContext } from 'react';
+import { SpiralContext } from '../contexts/SpiralContext';
 
 export function useEventBus(event: string, handler: (...args: any[]) => void): void {
+  const bus = useContext(SpiralContext);
+
   useEffect(() => {
-    eventBus.on(event, handler);
+    if (!bus) return;
+    bus.on(event, handler);
     return () => {
-      eventBus.off(event, handler);
+      bus.off(event, handler);
     };
-  }, [event, handler]);
+  }, [bus, event, handler]);
 }

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { NoteNode } from './NoteNode';
 import { HELIX_RADIUS } from '../data/noteData';
-import { eventBus } from '../utils/eventBus';
+import { EventBus } from '../utils/eventBus';
 
 export type ViewMode = 'spiral' | 'concentric' | 'fifths';
 
@@ -16,6 +16,7 @@ function easeInOutCubic(t: number): number {
 export class ViewManager {
   private scene: THREE.Scene;
   private nodes: NoteNode[];
+  private bus: EventBus;
   private mode: ViewMode = 'spiral';
   private octaveRings: THREE.LineLoop[] = [];
   private rootOffset = 0; // radians
@@ -26,23 +27,24 @@ export class ViewManager {
   private startPositions: THREE.Vector3[] = [];
   private targetPositions: THREE.Vector3[] = [];
 
-  constructor(scene: THREE.Scene, nodes: NoteNode[]) {
+  constructor(scene: THREE.Scene, nodes: NoteNode[], bus: EventBus) {
     this.scene = scene;
     this.nodes = nodes;
+    this.bus = bus;
 
     this.buildOctaveRings();
 
-    eventBus.on('view:toggle', (mode: ViewMode) => {
+    bus.on('view:toggle', (mode: ViewMode) => {
       if (mode !== this.mode) {
         const prevMode = this.mode;
         this.mode = mode;
-        eventBus.emit('view:modeChanged', { prevMode, newMode: mode });
-        eventBus.emit('camera:preset', mode === 'concentric' ? 'concentric' : 'default');
+        bus.emit('view:modeChanged', { prevMode, newMode: mode });
+        bus.emit('camera:preset', mode === 'concentric' ? 'concentric' : 'default');
         this.transitionTo();
       }
     });
 
-    eventBus.on('root:changed', (rootIndex: number) => {
+    bus.on('root:changed', (rootIndex: number) => {
       this.rootOffset = (rootIndex * Math.PI * 2) / 12;
       this.transitionTo();
     });
@@ -99,7 +101,7 @@ export class ViewManager {
         );
       }
 
-      eventBus.emit('view:positionsUpdated');
+      this.bus.emit('view:positionsUpdated');
 
       if (t < 1) {
         requestAnimationFrame(tick);

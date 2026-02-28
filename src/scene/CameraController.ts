@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { eventBus } from '../utils/eventBus';
+import { EventBus } from '../utils/eventBus';
 
 export type CameraPreset = 'default' | 'top' | 'side' | 'concentric';
 
@@ -8,7 +8,7 @@ export class CameraController {
   readonly controls: OrbitControls;
   private camera: THREE.PerspectiveCamera;
 
-  constructor(camera: THREE.PerspectiveCamera, domElement: HTMLElement) {
+  constructor(camera: THREE.PerspectiveCamera, domElement: HTMLElement, bus: EventBus) {
     this.camera = camera;
     this.controls = new OrbitControls(camera, domElement);
     this.controls.enableDamping = true;
@@ -18,7 +18,7 @@ export class CameraController {
     this.controls.maxDistance = 60;
     this.controls.update();
 
-    eventBus.on('camera:preset', (preset: CameraPreset) => {
+    bus.on('camera:preset', (preset: CameraPreset) => {
       this.goToPreset(preset);
     });
   }

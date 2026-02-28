@@ -11,6 +11,9 @@ export function NavHeader() {
         <NavLink to="/piano-spiral" className={({ isActive }) => (isActive ? 'nav-link nav-active' : 'nav-link')}>
           Piano Spiral
         </NavLink>
+        <NavLink to="/lessons/intervals" className={({ isActive }) => (isActive ? 'nav-link nav-active' : 'nav-link')}>
+          Lessons
+        </NavLink>
       </div>
     </nav>
   );

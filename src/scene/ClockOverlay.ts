@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { eventBus } from '../utils/eventBus';
+import { EventBus } from '../utils/eventBus';
 import { ViewMode } from './ViewManager';
 
 const CLOCK_RADIUS = 26; // just outside outermost octave ring
@@ -10,17 +10,17 @@ export class ClockOverlay {
   private visible = false;
   private currentMode: ViewMode = 'spiral';
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, bus: EventBus) {
     this.scene = scene;
     this.createSprites();
     this.updateVisibility();
 
-    eventBus.on('clock:toggle', () => {
+    bus.on('clock:toggle', () => {
       this.visible = !this.visible;
       this.updateVisibility();
     });
 
-    eventBus.on('view:toggle', (mode: ViewMode) => {
+    bus.on('view:toggle', (mode: ViewMode) => {
       this.currentMode = mode;
       this.updateVisibility();
     });
