@@ -1,8 +1,9 @@
-export type TabId = 'explore' | 'chords' | 'view' | 'play';
+export type TabId = 'explore' | 'chords' | 'modes' | 'view' | 'play';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'explore', label: 'Explore' },
   { id: 'chords', label: 'Chords' },
+  { id: 'modes', label: 'Modes' },
   { id: 'view', label: 'View' },
   { id: 'play', label: 'Play' },
 ];

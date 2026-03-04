@@ -266,6 +266,19 @@ body {
   padding: 4px 2px;
 }
 
+.mode-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mode-buttons .btn {
+  flex: none;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  text-align: left;
+}
+
 .inversion-buttons {
   display: flex;
   flex-wrap: wrap;

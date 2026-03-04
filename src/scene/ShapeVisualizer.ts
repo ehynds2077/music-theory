@@ -15,8 +15,7 @@ export class ShapeVisualizer {
   private scene: THREE.Scene;
   private nodes: NoteNode[];
   private nodesByMidi: Map<number, NoteNode>;
-  private fillMesh: THREE.Mesh | null = null;
-  private outlineLine: THREE.Line | THREE.LineLoop | null = null;
+  private shellGroup: THREE.Group | null = null;
   private currentShape: ShapePayload | null = null;
 
   constructor(scene: THREE.Scene, nodes: NoteNode[], bus: EventBus) {
@@ -49,17 +48,14 @@ export class ShapeVisualizer {
   }
 
   private clear(): void {
-    if (this.fillMesh) {
-      this.scene.remove(this.fillMesh);
-      this.fillMesh.geometry.dispose();
-      (this.fillMesh.material as THREE.Material).dispose();
-      this.fillMesh = null;
-    }
-    if (this.outlineLine) {
-      this.scene.remove(this.outlineLine);
-      this.outlineLine.geometry.dispose();
-      (this.outlineLine.material as THREE.Material).dispose();
-      this.outlineLine = null;
+    if (this.shellGroup) {
+      this.scene.remove(this.shellGroup);
+      this.shellGroup.traverse((child) => {
+        const obj = child as THREE.Mesh | THREE.Line;
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) (obj.material as THREE.Material).dispose();
+      });
+      this.shellGroup = null;
     }
   }
 
@@ -87,94 +83,179 @@ export class ShapeVisualizer {
     if (intervals.length < 2) return;
 
     // Compute MIDI numbers anchored at the reference octave
-    const baseMidi = (REF_OCTAVE + 1) * 12 + root; // e.g. C4 = 60
+    const baseMidi = (REF_OCTAVE + 1) * 12 + root;
     const midiNumbers = intervals.map((i) => baseMidi + i);
 
-    // Gather 3D positions from actual helix nodes, sorted ascending by MIDI
-    const shapeNodes: { pos: THREE.Vector3; pc: number }[] = [];
+    // Gather 3D positions from actual nodes
+    const shapeNodes: { pos: THREE.Vector3; pc: number; midi: number }[] = [];
     for (const midi of midiNumbers) {
       const node = this.nodesByMidi.get(midi);
       if (node) {
         shapeNodes.push({
           pos: node.group.position.clone(),
           pc: node.noteInfo.chromaticIndex,
+          midi: node.noteInfo.midiNumber,
         });
       }
     }
 
     if (shapeNodes.length < 2) return;
 
-    if (shapeNodes.length === 2) {
-      // Single line between two nodes
-      const positions: number[] = [];
-      const colors: number[] = [];
-      for (const sn of shapeNodes) {
-        positions.push(sn.pos.x, sn.pos.y, sn.pos.z);
-        const c = PITCH_COLORS[sn.pc];
-        colors.push(c.r, c.g, c.b);
+    this.buildShell(shapeNodes);
+  }
+
+  private buildShell(
+    shapeNodes: { pos: THREE.Vector3; pc: number; midi: number }[],
+  ): void {
+    this.shellGroup = new THREE.Group();
+
+    const firstMidi = shapeNodes[0].midi;
+    const lastMidi = shapeNodes[shapeNodes.length - 1].midi;
+
+    // Collect ALL chromatic node positions between first and last selected note
+    // to form a smooth spiral arc (uses actual node positions so it works in any view)
+    const arcNodes: { pos: THREE.Vector3; pc: number }[] = [];
+    for (let m = firstMidi; m <= lastMidi; m++) {
+      const node = this.nodesByMidi.get(m);
+      if (node) {
+        arcNodes.push({
+          pos: node.group.position.clone(),
+          pc: node.noteInfo.chromaticIndex,
+        });
       }
+    }
 
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    if (arcNodes.length < 2) return;
 
-      const mat = new THREE.LineBasicMaterial({
+    // ── 1. Outer spiral curve ──
+    const curvePositions: number[] = [];
+    const curveColors: number[] = [];
+    for (const an of arcNodes) {
+      curvePositions.push(an.pos.x, an.pos.y, an.pos.z);
+      const c = PITCH_COLORS[an.pc];
+      curveColors.push(c.r, c.g, c.b);
+    }
+
+    const curveGeo = new THREE.BufferGeometry();
+    curveGeo.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(curvePositions, 3),
+    );
+    curveGeo.setAttribute(
+      'color',
+      new THREE.Float32BufferAttribute(curveColors, 3),
+    );
+    const curveMat = new THREE.LineBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      linewidth: 2,
+    });
+    this.shellGroup.add(new THREE.Line(curveGeo, curveMat));
+
+    // ── 2. Chamber walls (radial lines from center axis to each selected note) ──
+    // Opacity fades from bottom (first note) to top (last note)
+    for (let i = 0; i < shapeNodes.length; i++) {
+      const sn = shapeNodes[i];
+      const t = shapeNodes.length > 1 ? i / (shapeNodes.length - 1) : 0;
+      const wallOpacity = 0.8 - t * 0.5; // 0.8 at bottom → 0.3 at top
+
+      const wallPositions = [0, sn.pos.y, 0, sn.pos.x, sn.pos.y, sn.pos.z];
+      const wc = PITCH_COLORS[sn.pc];
+      const wallColors = [
+        wc.r * 0.3, wc.g * 0.3, wc.b * 0.3,
+        wc.r, wc.g, wc.b,
+      ];
+
+      const wallGeo = new THREE.BufferGeometry();
+      wallGeo.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(wallPositions, 3),
+      );
+      wallGeo.setAttribute(
+        'color',
+        new THREE.Float32BufferAttribute(wallColors, 3),
+      );
+      const wallMat = new THREE.LineBasicMaterial({
         vertexColors: true,
         transparent: true,
-        opacity: 0.7,
+        opacity: wallOpacity,
       });
-      this.outlineLine = new THREE.Line(geo, mat);
-      this.scene.add(this.outlineLine);
-    } else {
-      // LineLoop outline with per-vertex pitch colors
-      const positions: number[] = [];
-      const colors: number[] = [];
-      for (const sn of shapeNodes) {
-        positions.push(sn.pos.x, sn.pos.y, sn.pos.z);
-        const c = PITCH_COLORS[sn.pc];
-        colors.push(c.r, c.g, c.b);
+      this.shellGroup.add(new THREE.Line(wallGeo, wallMat));
+    }
+
+    // ── 3. Fill chambers with color gradient and fading opacity ──
+    const totalChambers = shapeNodes.length - 1;
+    for (let i = 0; i < totalChambers; i++) {
+      const sn1 = shapeNodes[i];
+      const sn2 = shapeNodes[i + 1];
+
+      // Opacity fades from bottom to top
+      const chamberT = totalChambers > 1 ? i / (totalChambers - 1) : 0;
+      const chamberOpacity = 0.55 - chamberT * 0.3; // 0.55 at bottom → 0.25 at top
+
+      // Collect arc points between these two selected notes (with pitch class)
+      const segArc: { pos: THREE.Vector3; pc: number }[] = [];
+      for (let m = sn1.midi; m <= sn2.midi; m++) {
+        const node = this.nodesByMidi.get(m);
+        if (node) {
+          segArc.push({
+            pos: node.group.position.clone(),
+            pc: node.noteInfo.chromaticIndex,
+          });
+        }
       }
 
-      const outlineGeo = new THREE.BufferGeometry();
-      outlineGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      outlineGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      if (segArc.length < 2) continue;
 
-      const outlineMat = new THREE.LineBasicMaterial({
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.7,
-        linewidth: 2,
-      });
-      this.outlineLine = new THREE.LineLoop(outlineGeo, outlineMat);
-      this.scene.add(this.outlineLine);
-
-      // Fill mesh — triangle fan from centroid
-      const centroid = new THREE.Vector3();
-      for (const sn of shapeNodes) centroid.add(sn.pos);
-      centroid.divideScalar(shapeNodes.length);
-
+      // Triangle fan from center axis through arc points
+      // Each vertex uses the actual pitch color of the note at that position
       const verts: number[] = [];
-      for (let i = 0; i < shapeNodes.length; i++) {
-        const a = shapeNodes[i].pos;
-        const b = shapeNodes[(i + 1) % shapeNodes.length].pos;
-        verts.push(centroid.x, centroid.y, centroid.z);
-        verts.push(a.x, a.y, a.z);
-        verts.push(b.x, b.y, b.z);
+      const colors: number[] = [];
+      for (let j = 0; j < segArc.length - 1; j++) {
+        const cy = (segArc[j].pos.y + segArc[j + 1].pos.y) / 2;
+        const col1 = PITCH_COLORS[segArc[j].pc];
+        const col2 = PITCH_COLORS[segArc[j + 1].pc];
+
+        // Center vertex — dimmed blend of the two adjacent note colors
+        verts.push(0, cy, 0);
+        colors.push(
+          (col1.r + col2.r) * 0.25,
+          (col1.g + col2.g) * 0.25,
+          (col1.b + col2.b) * 0.25,
+        );
+
+        // Arc edge vertices — actual pitch color of each note
+        verts.push(segArc[j].pos.x, segArc[j].pos.y, segArc[j].pos.z);
+        colors.push(col1.r, col1.g, col1.b);
+
+        verts.push(segArc[j + 1].pos.x, segArc[j + 1].pos.y, segArc[j + 1].pos.z);
+        colors.push(col2.r, col2.g, col2.b);
       }
+
+      if (verts.length === 0) continue;
 
       const fillGeo = new THREE.BufferGeometry();
-      fillGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+      fillGeo.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(verts, 3),
+      );
+      fillGeo.setAttribute(
+        'color',
+        new THREE.Float32BufferAttribute(colors, 3),
+      );
       fillGeo.computeVertexNormals();
 
       const fillMat = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
+        vertexColors: true,
         transparent: true,
-        opacity: 0.12,
+        opacity: chamberOpacity,
         side: THREE.DoubleSide,
         depthWrite: false,
       });
-      this.fillMesh = new THREE.Mesh(fillGeo, fillMat);
-      this.scene.add(this.fillMesh);
+      this.shellGroup.add(new THREE.Mesh(fillGeo, fillMat));
     }
+
+    this.scene.add(this.shellGroup);
   }
 }

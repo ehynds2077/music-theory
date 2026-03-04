@@ -1,14 +1,10 @@
 import * as THREE from 'three';
-import { NoteNode } from './NoteNode';
+import { NoteNode, PITCH_COLORS } from './NoteNode';
 import { NoteInfo } from '../data/noteData';
 import { CHORDS } from '../data/chords';
 import { EventBus } from '../utils/eventBus';
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
-const LINE_COLOR = 0xffcc00;
-const FILL_COLOR = 0xffcc00;
-const FILL_OPACITY = 0.15;
 
 export class LiveChordVisualizer {
   private scene: THREE.Scene;
@@ -16,7 +12,7 @@ export class LiveChordVisualizer {
   private nodesByMidi: Map<number, NoteNode>;
   private activeNotes = new Set<number>();
   private selectedNotes = new Set<number>();
-  private lineObj: THREE.Line | THREE.LineLoop | null = null;
+  private lineObj: THREE.Line | null = null;
   private fillMesh: THREE.Mesh | null = null;
 
   constructor(scene: THREE.Scene, nodes: NoteNode[], bus: EventBus) {
@@ -82,60 +78,78 @@ export class LiveChordVisualizer {
     const sorted = [...this.combinedNotes()].sort((a, b) => a - b);
     if (sorted.length < 2) return;
 
-    // Gather 3D positions from actual helix nodes
-    const positions: THREE.Vector3[] = [];
+    // Gather positions and colors for selected notes only
+    const linePositions: number[] = [];
+    const lineColors: number[] = [];
     for (const midi of sorted) {
       const node = this.nodesByMidi.get(midi);
-      if (node) {
-        positions.push(node.group.position.clone());
-      }
+      if (!node) continue;
+      const p = node.group.position;
+      linePositions.push(p.x, p.y, p.z);
+      const c = PITCH_COLORS[node.noteInfo.chromaticIndex];
+      lineColors.push(c.r, c.g, c.b);
+    }
+
+    if (linePositions.length < 6) return;
+
+    // Collect valid positions and nodes for fill
+    const positions: THREE.Vector3[] = [];
+    const nodes: NoteNode[] = [];
+    for (const midi of sorted) {
+      const node = this.nodesByMidi.get(midi);
+      if (!node) continue;
+      positions.push(node.group.position);
+      nodes.push(node);
     }
 
     if (positions.length < 2) return;
 
-    if (positions.length === 2) {
-      // Single line between two notes
-      const geo = new THREE.BufferGeometry().setFromPoints(positions);
-      const mat = new THREE.LineBasicMaterial({
-        color: LINE_COLOR,
-        transparent: true,
-        opacity: 0.7,
-      });
-      this.lineObj = new THREE.Line(geo, mat);
-      this.scene.add(this.lineObj);
-    } else {
-      // LineLoop outline
-      const geo = new THREE.BufferGeometry().setFromPoints(positions);
-      const mat = new THREE.LineBasicMaterial({
-        color: LINE_COLOR,
-        transparent: true,
-        opacity: 0.7,
-      });
-      this.lineObj = new THREE.LineLoop(geo, mat);
-      this.scene.add(this.lineObj);
+    // Lines connecting consecutive selected notes (open, no loop-back)
+    const lineGeo = new THREE.BufferGeometry();
+    lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+    lineGeo.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
+    const lineMat = new THREE.LineBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.7,
+    });
+    this.lineObj = new THREE.Line(lineGeo, lineMat);
+    this.scene.add(this.lineObj);
 
-      // Fill mesh — triangle fan from centroid
+    // Fill: triangle fan from centroid, colored by each note's pitch
+    if (positions.length >= 3) {
       const centroid = new THREE.Vector3();
       for (const p of positions) centroid.add(p);
       centroid.divideScalar(positions.length);
 
       const verts: number[] = [];
-      for (let i = 0; i < positions.length; i++) {
+      const fillColors: number[] = [];
+      for (let i = 0; i < positions.length - 1; i++) {
         const a = positions[i];
-        const b = positions[(i + 1) % positions.length];
+        const b = positions[i + 1];
+        const cA = PITCH_COLORS[nodes[i].noteInfo.chromaticIndex];
+        const cB = PITCH_COLORS[nodes[i + 1].noteInfo.chromaticIndex];
+
+        // Centroid vertex — dimmed blend of the two edge colors
         verts.push(centroid.x, centroid.y, centroid.z);
+        fillColors.push((cA.r + cB.r) * 0.25, (cA.g + cB.g) * 0.25, (cA.b + cB.b) * 0.25);
+
         verts.push(a.x, a.y, a.z);
+        fillColors.push(cA.r, cA.g, cA.b);
+
         verts.push(b.x, b.y, b.z);
+        fillColors.push(cB.r, cB.g, cB.b);
       }
 
       const fillGeo = new THREE.BufferGeometry();
       fillGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+      fillGeo.setAttribute('color', new THREE.Float32BufferAttribute(fillColors, 3));
       fillGeo.computeVertexNormals();
 
       const fillMat = new THREE.MeshBasicMaterial({
-        color: FILL_COLOR,
+        vertexColors: true,
         transparent: true,
-        opacity: FILL_OPACITY,
+        opacity: 0.15,
         side: THREE.DoubleSide,
         depthWrite: false,
       });

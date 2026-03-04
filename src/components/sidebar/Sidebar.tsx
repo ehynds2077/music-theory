@@ -3,6 +3,7 @@ import { TabBar, TabId } from './TabBar';
 import { RootAndShapePanel } from './RootAndShapePanel';
 import { IntervalPanel } from './IntervalPanel';
 import { ChordsPanel } from './ChordsPanel';
+import { ModesPanel } from './ModesPanel';
 import { ViewModePanel } from './ViewModePanel';
 import { CameraPanel } from './CameraPanel';
 import { ClockOverlayToggle } from './ClockOverlayToggle';
@@ -26,6 +27,9 @@ export function Sidebar() {
         </div>
         <div className="tab-panel" style={{ display: activeTab === 'chords' ? undefined : 'none' }}>
           <ChordsPanel />
+        </div>
+        <div className="tab-panel" style={{ display: activeTab === 'modes' ? undefined : 'none' }}>
+          <ModesPanel />
         </div>
         <div className="tab-panel" style={{ display: activeTab === 'view' ? undefined : 'none' }}>
           <ViewModePanel />
